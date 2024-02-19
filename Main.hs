@@ -1,5 +1,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use foldr" #-}
+{-# HLINT ignore "Use map" #-}
+{-# HLINT ignore "Avoid lambda" #-}
 module Main where
 
 import Text.Printf (printf)
@@ -7,16 +9,25 @@ import Control.Monad (unless)
 import Data.List (sort)
 
 quickSort :: [Int] -> [Int]
-quickSort = id 
+quickSort [] = []
+quickSort (pivot:rest) = smaller ++ [pivot] ++ bigger
+    where smaller = quickSort [x | x <- rest, x <= pivot]
+          bigger = quickSort [x | x <- rest, x > pivot]
 
 map' :: (a -> b) -> [a] -> [b]
-map' = undefined 
+map' f = foldr (\x acc -> f x : acc) []
 
 concatMap' :: (a -> [b]) -> [a] -> [b]
-concatMap' = undefined 
+concatMap' f = foldr (\x -> (++) (f x)) []
 
 positions :: (a -> Bool) -> [a] -> [Int]
-positions = undefined 
+positions predicate xs = map snd (filter (predicate . fst) (zip xs [0..]))
+
+{- another implementation of positions:
+positions :: (a -> Bool) -> [a] -> [Int]
+positions p xs = foldr check [] [0..length xs - 1]
+    where check i acc = if p (xs !! i) then i : acc else acc
+-}
 
 main = do
   runTests
