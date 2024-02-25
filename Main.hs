@@ -10,7 +10,7 @@ import Data.List (sort)
 
 quickSort :: [Int] -> [Int]
 quickSort [] = []
-quickSort (pivot:rest) = smaller ++ [pivot] ++ bigger
+quickSort (pivot:rest) = smaller ++ (pivot : bigger)
     where smaller = quickSort [x | x <- rest, x <= pivot]
           bigger = quickSort [x | x <- rest, x > pivot]
 
