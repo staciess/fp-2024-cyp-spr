@@ -2,8 +2,6 @@ module Main where
 
 import Text.Printf (printf)
 import Control.Monad (unless)
-import Distribution.Simple.Utils (xargs)
-import Language.Haskell.TH (Exp)
 
 data Expr
   = Expr Double
@@ -14,7 +12,6 @@ data Expr
   | (:^) Expr Expr
   | Sqr  Expr
   deriving Eq
-
 
 instance Show Expr where
   show (Expr x) = show x
@@ -40,7 +37,6 @@ instance Eq Error where
   (DivisionByZero expr1) == (DivisionByZero expr2) = expr1 == expr2
   _ == _ = False
 
-
 eval :: Expr -> Either Error Double
 eval expr = case expr of
   Expr x      -> Right x
@@ -62,7 +58,6 @@ binOp f a b = do
   v <- eval a
   w <- eval b
   return (f v w)
-
 
 cases :: [(Expr, Either Error Double)]
 cases =
@@ -88,4 +83,5 @@ test expr expected =
 
 
 main :: IO ()
-main = mapM_ (uncurry test) cases
+main = do
+  mapM_ (uncurry test) cases
