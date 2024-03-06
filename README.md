@@ -1,5 +1,5 @@
 # HW05
-## Deadline: 12.03.2024
+## Deadline: 23:59 12.03.2024
 
 1. (1 point) Make your solution of HW04 into a stack project.
 2. (1 points) Replace the associative list with a `Map` from `Data.Map.Strict` in the `containers` package.
