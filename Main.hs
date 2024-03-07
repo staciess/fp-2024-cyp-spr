@@ -15,27 +15,23 @@ data Expr
 
 instance Show Expr where
   show (Expr x) = show x
-  show ((:+) a b)  = printf "(%a + %b)" (show a) (show b)
-  show ((:-) a b) = printf  "(%a - %b)" (show a) (show b)
-  show ((:*) a b) = printf  "%(a * %b)" (show a) (show b)
-  show ((:/) a b) = printf  "%(a / %b)" (show a) (show b)
-  show ((:^) a b) = printf  "%(a ^ %b)" (show a) (show b)
+  show (a :+ b)  = printf "(%s + %s)" (show a) (show b)
+  show (a :- b) = printf  "(%s - %s)" (show a) (show b)
+  show (a :* b) = printf  "(%s * %s)" (show a) (show b)
+  show (a :/ b) = printf  "(%s / %s)" (show a) (show b)
+  show (a :^ b) = printf  "(%s ^ %s)" (show a) (show b)
   show (Sqr x) = printf "sqrt(%s)" $ show x
 
 data Error
   = NegativeSqr Expr
   | NegativePwr Expr
   | DivisionByZero Expr
+  deriving Eq
 
 instance Show Error where
-  show (NegativeSqr expr) = printf "Negative square root"
-  show (DivisionByZero expr) = printf "Division by zero"
-
-instance Eq Error where
-  (NegativeSqr expr1) == (NegativeSqr expr2) = expr1 == expr2
-  (NegativePwr expr1) == (NegativePwr expr2) = expr1 == expr2
-  (DivisionByZero expr1) == (DivisionByZero expr2) = expr1 == expr2
-  _ == _ = False
+  show (NegativeSqr expr) = printf "Negative square root of %s" (show expr)
+  show (NegativePwr expr) = printf "Negative power of %s" (show expr)
+  show (DivisionByZero expr) = printf "Division by zero in %s" (show expr)
 
 eval :: Expr -> Either Error Double
 eval expr = case expr of
@@ -44,14 +40,19 @@ eval expr = case expr of
   (:-) a b    -> binOp (-) a b
   (:*) a b    -> binOp (*) a b
   (:/) a b    -> if b == Expr 0 then Left (DivisionByZero a) else binOp (/) a b
-  (:^) a b    -> binOp (**) a b
+  (:^) a b    -> evalPwr a b
   Sqr x       -> evalSqr x
   where
     evalSqr :: Expr -> Either Error Double
     evalSqr (Expr a)
       | a < 0.0   = Left (NegativeSqr (Expr a))
       | otherwise = Right (sqrt a)
-    evalSqr e    = eval (Sqr e)
+    evalSqr e     = eval (Sqr e)
+    evalPwr :: Expr -> Expr -> Either Error Double
+    evalPwr (Expr a) (Expr b)
+        | a < 0.0     = Left (NegativePwr (Expr a))
+        | otherwise   = Right (a ** b)
+    evalPwr a b     = eval ((:^) a b)
 
 binOp :: (Double -> Double -> Double) -> Expr -> Expr -> Either Error Double
 binOp f a b = do
@@ -62,6 +63,7 @@ binOp f a b = do
 cases :: [(Expr, Either Error Double)]
 cases =
   [ (Expr 5, Right 5)
+  , (Sqr (Expr 25), Right 5)
   , (Sqr (Expr (-5)), Left (NegativeSqr (Expr (-5))))
   , (Expr 10 :+ Expr 5, Right 15)
   , (Expr 10 :- Expr 5, Right 5)
@@ -69,8 +71,7 @@ cases =
   , (Expr 10 :/ Expr 5, Right 2)
   , (Expr 10 :/ Expr 0, Left (DivisionByZero (Expr 10)))
   , (Expr 2 :^ Expr 3, Right 8)
-  , (Sqr (Expr 25), Right 5)
-  , (Sqr (Expr (-25)), Left (NegativeSqr (Expr (-25))))
+  , (Expr (-2) :^ Expr (1), Left (NegativePwr (Expr (-2))))
   ]
 
 test :: Expr -> Either Error Double -> IO ()
