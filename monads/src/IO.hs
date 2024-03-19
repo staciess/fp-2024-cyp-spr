@@ -1,16 +1,17 @@
 module IO where 
 
--- Implement reading line from standard input. 
--- Use getChar to read a single character. 
 myGetLine :: IO String 
-myGetLine = undefined 
+myGetLine = do
+    c <- getChar
+    if c == '\n' then return [] else do
+        cs <- myGetLine
+        return (c:cs)
 
--- Ask the user for their name.
--- Print "Hello, NAME" to the standard output, where NAME is the name of the user.
--- Use myGetLine.
 helloUser :: IO () 
-helloUser = undefined 
+helloUser = do
+    putStrLn "Please enter your name:"
+    name <- myGetLine
+    putStrLn("Hello, " ++ name)
 
--- Use interact in helloUser.
 helloUser' :: IO () 
-helloUser' = undefined 
+helloUser' = interact(\input -> "Hello, " ++ input ++ "\n")
