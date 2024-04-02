@@ -1,27 +1,88 @@
-module Expr where 
+{-# OPTIONS_GHC -Wno-unused-imports #-}
+{-# OPTIONS_GHC -Wno-incomplete-patterns #-}
+{-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
+{-# HLINT ignore "Redundant bracket" #-}
+{-# OPTIONS_GHC -Wno-unused-matches #-}
+
+module Expr where
 import StateDemo ( State, execState, get, modify )
 import Data.Maybe ( fromJust )
+import Text.Printf (printf)
+import Control.Monad.State
 
-data Expr = V String | C Int | Plus Expr Expr 
-          | Let String Expr Expr 
-        
-type ExprState = [(String, Int)]
+data Expr
+  = Expr Double
+  | Var String
+  | Expr :+: Expr
+  | Expr :-: Expr
+  | Expr :*: Expr
+  | Expr :/: Expr
+  | Expr :^: Expr
+  | Sqr Expr
+  deriving Eq
 
-eval :: Expr -> State ExprState Int
-eval (V v) = do 
-  env <- get 
-  return $ fromJust $ lookup v env
-eval (C x) = return x 
-eval (Plus x y) = do 
-  x <- eval x 
-  y <- eval y 
-  return $ x + y 
-eval (Let x v b) = do 
-  v <- eval v 
-  modify ((x, v) :)
-  eval b 
 
--- runEval (Let "x" (C 13) (Plus (V "x") (C 42)))
-runEval :: Expr -> Int
-runEval expr = 
-  execState (eval expr) [] 
+instance Show Expr where
+  show (Expr x) = show x
+  show (Var v)  = v
+  show (a :+: b) = printf "(%s + %s)" (show a) (show b)
+  show (a :-: b) = printf "(%s - %s)" (show a) (show b)
+  show (a :*: b) = printf "(%s * %s)" (show a) (show b)
+  show (a :/: b) = printf "(%s / %s)" (show a) (show b)
+  show (a :^: b) = printf "(%s ^ %s)" (show a) (show b)
+  show (Sqr x)   = printf "sqrt(%s)" $ show x
+
+data Error
+  = NegativeSqr Expr
+  | NegativePwr Expr
+  | DivisionByZero Expr
+  deriving Eq
+
+instance Show Error where
+  show (NegativeSqr a) = printf "Negative square root"
+  show (NegativePwr a) = printf "Negative power"
+  show (DivisionByZero a) = printf "Division by zero"
+
+type ExprState = [(String, Double)]
+
+eval :: Expr -> State ExprState (Either Error Double)
+eval expr = case expr of
+  Expr x       -> return $ Right x
+  Var v        -> do
+    env <- get
+    case lookup v env of
+      Just x -> return $ Right x
+      Nothing -> return $ Left $ UnknownVariable v
+  (a :+: b)    -> evalBinOp (+) a b
+  (a :-: b)    -> evalBinOp (-) a b
+  (a :*: b)    -> evalBinOp (*) a b
+  (a :/: b)    -> evalDiv a b
+  (a :^: b)    -> evalBinOp (**) a b
+  Sqr x        -> evalSqr x
+  where
+    evalBinOp f a b = do
+      x <- eval a
+      y <- eval b
+      case (x, y) of
+        (Right x', Right y') -> return $ Right (f x' y')
+        (Left e, _) -> return $ Left e
+        (_, Left e) -> return $ Left e
+    evalDiv a b = do
+      x <- eval a
+      y <- eval b
+      case (x, y) of
+        (Right x', Right y')
+          | y' == 0 -> return $ Left (DivisionByZero b)
+          | otherwise -> return $ Right (x' / y')
+        (Left e, _) -> return $ Left e
+        (_, Left e) -> return $ Left e
+    evalSqr e = do
+      x <- eval e
+      case x of
+        Right x' 
+          | x' < 0 -> return $ Left (NegativeSqr e)
+          | otherwise -> return $ Right (sqrt x')
+        Left e -> return $ Left e
+
+runEval :: ExprState -> Expr -> Either EvalError Double
+runEval s expr = evalState (eval expr) s
