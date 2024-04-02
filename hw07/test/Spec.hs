@@ -1,13 +1,13 @@
 import Test.Tasty
 import Test.Tasty.HUnit
-import Expr (parseExpr, Expr(..))
-import Parser
+import Expr (Expr(..), eval)
+import Parser (parseExpr)
 
 main :: IO ()
 main = defaultMain tests
 
 tests :: TestTree
-tests = testGroup "Tests" [evalTests]
+tests = testGroup "Tests" [evalTests, parserTests]
 
 evalTests :: TestTree
 evalTests = testGroup "Eval Tests"
@@ -33,8 +33,8 @@ evalTests = testGroup "Eval Tests"
       eval (Sqr (Expr (-25))) @?= Left (NegativeSqr (Expr (-25)))
   ]
 
-tests :: TestTree
-tests = testGroup "Parser Tests"
+parserTests :: TestTree
+parserTests = testGroup "Parser Tests"
   [ testCase "Positive integer" $
       parseExpr "123" @?= Just (Expr 123)
   , testCase "Variable" $
@@ -58,4 +58,3 @@ tests = testGroup "Parser Tests"
   , testCase "Negatives" $
       parseExpr "- 123" @?= Nothing
   ]
-
